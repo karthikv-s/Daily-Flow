@@ -1,0 +1,68 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id             Int               @id @default(autoincrement())
+  email          String            @unique
+  passwordHash   String
+  pointsTotal    Int               @default(0)
+  streakDays     Int               @default(0)
+  lastActiveDate DateTime?
+  badges         String[]          @default([])
+  createdAt      DateTime          @default(now())
+  tasks          Task[]
+  pushSubs       PushSubscription[]
+  chatMessages   ChatMessage[]
+}
+
+model Task {
+  id            Int       @id @default(autoincrement())
+  userId        Int
+  title         String
+  description   String?
+  dueAt         DateTime
+  priority      String    @default("medium")
+  category      String?
+  status        String    @default("pending")
+  completedAt   DateTime?
+  pointsAwarded Int       @default(0)
+  notified15    Boolean   @default(false)
+  notifiedDue   Boolean   @default(false)
+  createdAt     DateTime  @default(now())
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushSubscription {
+  id       Int    @id @default(autoincrement())
+  userId   Int
+  endpoint String @unique
+  p256dh   String
+  auth     String
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ChatMessage {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  role      String
+  content   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PasswordResetOtp {
+  id        Int      @id @default(autoincrement())
+  email     String
+  otp       String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+

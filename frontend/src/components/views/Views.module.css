@@ -1,0 +1,534 @@
+/* ── Shared Views Container & Hero Banner ── */
+.viewContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  animation: fadeIn 0.2s ease forwards;
+}
+
+.heroBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px 24px;
+  box-shadow: var(--shadow);
+}
+
+.heroLeft {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.viewHeading {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.viewSub {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+}
+
+.heroStats {
+  display: flex;
+  gap: 10px;
+}
+
+.statPill {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.statPillNum {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1.1;
+}
+
+.statPillLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* ── Section Card ── */
+.sectionCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sectionTitle {
+  font-size: 1rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-primary);
+}
+
+/* ── Quick Add Form (My Day) ── */
+.quickAddForm {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+}
+
+.quickAddInput {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.88rem;
+  font-family: inherit;
+  color: var(--text-primary);
+}
+.quickAddInput::placeholder { color: var(--text-muted); }
+
+/* ── Items & Task List Rows ── */
+.itemList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.taskRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  gap: 12px;
+  transition: all 0.15s ease;
+}
+.taskRow:hover {
+  background: var(--bg-surface-hover);
+  transform: translateY(-1px);
+}
+
+.taskRowDone {
+  opacity: 0.7;
+}
+
+.checkboxBtn {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  font-size: 0.65rem;
+  color: transparent;
+}
+.checkboxBtn:hover { border-color: var(--accent); }
+.checkboxDone {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: #ffffff !important;
+}
+
+.taskInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.taskTitle {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.taskMeta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Filter Bar (Tasks View) ── */
+.filterBar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filterTabs {
+  display: flex;
+  gap: 6px;
+  background: var(--bg-surface);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.filterTabBtn {
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.filterTabActive {
+  background: var(--accent-gradient);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.filterActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ── Calendar Grid ── */
+.calendarLayoutGrid {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.calendarNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+}
+
+.weekdaysRow {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.weekdayHeader {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.daysGrid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.dayCell {
+  height: 64px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.dayCell:hover { background: var(--bg-surface-hover); border-color: var(--accent); }
+.dayCellSelected {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+.dayCellToday {
+  background: var(--accent-dim) !important;
+  font-weight: 800;
+}
+
+.dayCellNumber {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.dayTasksIndicator {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.dayTaskDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.emptyDayCell {
+  height: 64px;
+}
+
+/* ── Goals Grid ── */
+.goalsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.goalCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: var(--shadow);
+}
+
+.goalTopRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.goalTitle {
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.goalProgressInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.goalProgressBarOuter {
+  height: 8px;
+  background: var(--bg-base);
+  border-radius: 99px;
+  overflow: hidden;
+}
+
+.goalProgressBarInner {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.4s ease;
+}
+
+.goalControls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 6px;
+}
+
+/* ── Habits Table ── */
+.habitTableHeader {
+  display: flex;
+  align-items: center;
+  padding: 10px 14px;
+  background: var(--bg-base);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+}
+
+.habitRow {
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  gap: 12px;
+}
+
+.habitDaysRow {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex: 2;
+}
+
+.habitDayHeaderCol {
+  width: 32px;
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.habitCheckBtn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--border-strong);
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: transparent;
+  transition: all 0.2s ease;
+}
+.habitCheckBtn:hover { border-color: var(--accent); }
+.habitCheckBtnActive {
+  background: var(--accent-gradient) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px var(--accent-glow);
+}
+
+/* ── Analytics Grid ── */
+.analyticsGrid4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.analyticCard {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: var(--shadow);
+}
+
+.analyticNum {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.analyticLabel {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.analyticsSplit {
+  display: flex;
+  gap: 20px;
+}
+
+.badgesList {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.badgeItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+}
+
+.badgeUnlocked {
+  border-color: var(--accent-dim);
+  background: var(--purple-bg);
+}
+.badgeLocked {
+  opacity: 0.55;
+  filter: grayscale(1);
+}
+
+.badgeIcon {
+  font-size: 1.5rem;
+}
+
+/* ── Notes Grid ── */
+.notesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.noteCard {
+  border-radius: var(--radius);
+  padding: 18px;
+  box-shadow: var(--shadow);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s ease;
+}
+.noteCard:hover { transform: translateY(-2px); }
+
+/* ── Modals & Empty States ── */
+.emptyState {
+  text-align: center;
+  padding: 36px 16px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 440px;
+  padding: 24px;
+  background: var(--bg-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+  .analyticsGrid4 { grid-template-columns: 1fr 1fr; }
+  .analyticsSplit { flex-direction: column; }
+  .calendarLayoutGrid { flex-direction: column; }
+  .badgesList { grid-template-columns: 1fr; }
+}

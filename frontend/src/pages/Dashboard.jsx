@@ -1,0 +1,770 @@
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { useToast } from '../contexts/ToastContext';
+import { useTheme } from '../contexts/ThemeContext';
+import { getTasks, updateTask, deleteTask, createTask } from '../api';
+import TaskForm from '../components/TaskForm';
+import ChatPanel from '../components/ChatPanel';
+import ProfileModal from '../components/ProfileModal';
+
+// Sidebar Sub-Views
+import MyDayView from '../components/views/MyDayView';
+import TasksView from '../components/views/TasksView';
+import CalendarView from '../components/views/CalendarView';
+import GoalsView from '../components/views/GoalsView';
+import HabitsView from '../components/views/HabitsView';
+import AnalyticsView from '../components/views/AnalyticsView';
+import RemindersView from '../components/views/RemindersView';
+import NotesView from '../components/views/NotesView';
+
+import styles from './Dashboard.module.css';
+
+const NAV_ITEMS = [
+  { id: 'dashboard', label: 'Dashboard', icon: '🏠' },
+  { id: 'my_day',    label: 'My Day',    icon: '🌤️' },
+  { id: 'tasks',     label: 'Tasks',     icon: '☑️' },
+  { id: 'calendar',  label: 'Calendar',  icon: '🗓️' },
+  { id: 'goals',     label: 'Goals',     icon: '🎯' },
+  { id: 'habits',    label: 'Habits',    icon: '🔄' },
+  { id: 'analytics', label: 'Analytics', icon: '📊' },
+  { id: 'ai',        label: 'AI Assistant', icon: '🤖' },
+  { id: 'reminders', label: 'Reminders', icon: '🔔' },
+  { id: 'notes',     label: 'Notes',     icon: '📝' },
+];
+
+const DEFAULT_SCHEDULE_ROUTINE = [
+  { time: '09:00 AM - 10:00 AM', title: 'Team Standup Meeting', meta: 'Google Meet', dotColor: '#8b5cf6', bg: 'var(--purple-bg)' },
+  { time: '10:30 AM - 12:00 PM', title: 'Deep Work Session',    meta: 'Focus Block', dotColor: '#3b82f6', bg: 'var(--blue-dim)' },
+  { time: '12:00 PM - 01:00 PM', title: 'Lunch Break & Walk',   meta: 'Wellness',    dotColor: '#10b981', bg: 'var(--green-bg)' },
+  { time: '01:00 PM - 03:00 PM', title: 'Project Development',  meta: 'DailyFlow AI Features', dotColor: '#f59e0b', bg: 'var(--yellow-bg)' },
+  { time: '04:00 PM - 05:00 PM', title: 'Review & Daily Planning', meta: 'Organize next day', dotColor: '#ec4899', bg: 'var(--accent-dim)' },
+];
+
+export default function Dashboard() {
+  const { user, logout, refreshUser } = useAuth();
+  const { addToast } = useToast();
+  const { theme, setTheme, isDark } = useTheme();
+
+  const [activeNav, setActiveNav]     = useState('dashboard');
+  const [tasks, setTasks]             = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab]     = useState('all'); // all | pending | done
+  const [showForm, setShowForm]       = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
+  const [chatOpen, setChatOpen]       = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+
+  // Fetch Tasks
+  const fetchTasks = useCallback(async () => {
+    try {
+      const res = await getTasks();
+      setTasks(res.data);
+    } catch {
+      addToast({ title: 'Failed to load tasks', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [fetchTasks]);
+
+  // Greeting & Date format
+  const now = new Date();
+  const greeting = useMemo(() => {
+    const hour = now.getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }, [now]);
+
+  const userName = useMemo(() => {
+    const storedName = localStorage.getItem('user_display_name');
+    if (storedName) return storedName;
+    if (!user?.email) return 'Karthik';
+    const namePart = user.email.split('@')[0];
+    return namePart.charAt(0).toUpperCase() + namePart.slice(1);
+  }, [user]);
+
+  const userAvatarEmoji = useMemo(() => {
+    return localStorage.getItem('user_avatar_emoji') || '🧑‍💻';
+  }, [showProfileModal]);
+
+
+  const dateString = useMemo(() => {
+    return now.toLocaleDateString('en-US', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+  }, [now]);
+
+  // Filtering for Today's tasks & Status
+  const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const endOfDay   = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000 - 1);
+
+  const todaysTasks = useMemo(() => {
+    return tasks.filter((t) => {
+      const d = new Date(t.dueAt);
+      return d >= startOfDay && d <= endOfDay;
+    });
+  }, [tasks, startOfDay, endOfDay]);
+
+  const pendingCount = tasks.filter((t) => t.status === 'pending').length;
+  const doneCount    = tasks.filter((t) => t.status === 'done').length;
+  const todayTaskCount = todaysTasks.length || tasks.length || 6;
+  const completedTodayCount = todaysTasks.filter((t) => t.status === 'done').length || doneCount;
+
+  // Task list display filter
+  const displayedTasks = useMemo(() => {
+    let filtered = tasks;
+
+    if (activeTab === 'pending') {
+      filtered = filtered.filter((t) => t.status === 'pending');
+    } else if (activeTab === 'done') {
+      filtered = filtered.filter((t) => t.status === 'done');
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      filtered = filtered.filter((t) =>
+        t.title.toLowerCase().includes(q) ||
+        (t.category && t.category.toLowerCase().includes(q))
+      );
+    }
+
+    return filtered;
+  }, [tasks, activeTab, searchQuery]);
+
+  // Dynamic Progress percentage
+  const totalRelevant = tasks.length || 1;
+  const progressPercent = Math.min(100, Math.round((doneCount / totalRelevant) * 100)) || 60;
+
+  // Task Completion Handler
+  async function handleToggleComplete(task) {
+    const isDone = task.status === 'done';
+    const newStatus = isDone ? 'pending' : 'done';
+
+    try {
+      const res = await updateTask(task.id, { status: newStatus });
+      const { pointsAwarded, newBadges } = res.data;
+
+      setTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, ...res.data.task } : t))
+      );
+
+      if (!isDone) {
+        if (pointsAwarded > 0) {
+          addToast({
+            title: `+${pointsAwarded} Points! ⚡`,
+            message: 'Task completed on time!',
+            type: 'success',
+          });
+        } else {
+          addToast({
+            title: 'Task Completed',
+            message: 'Marked done (past deadline)',
+            type: 'info',
+          });
+        }
+
+        if (newBadges && newBadges.length > 0) {
+          for (const badge of newBadges) {
+            addToast({
+              title: 'Badge Unlocked! 🏆',
+              message: badge.label,
+              type: 'badge',
+              duration: 6000,
+            });
+          }
+        }
+      }
+      refreshUser();
+    } catch {
+      addToast({ title: 'Could not update task status', type: 'error' });
+    }
+  }
+
+  // Delete Task
+  async function handleDelete(id) {
+    try {
+      await deleteTask(id);
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+      addToast({ title: 'Task deleted', type: 'info' });
+    } catch {
+      addToast({ title: 'Could not delete task', type: 'error' });
+    }
+  }
+
+  // Direct Add Task Helper
+  async function handleDirectAddTask(taskData) {
+    try {
+      const res = await createTask(taskData);
+      setTasks((prev) => [res.data, ...prev]);
+      addToast({ title: 'Task Created! ✨', message: `Added "${taskData.title}"`, type: 'success' });
+    } catch {
+      addToast({ title: 'Failed to create task', type: 'error' });
+    }
+  }
+
+  // Quick schedule from AI suggestion
+  async function handleScheduleAiSuggestion() {
+    try {
+      const due = new Date();
+      due.setHours(14, 0, 0, 0); // 2:00 PM today
+      if (due < new Date()) due.setDate(due.getDate() + 1);
+
+      const res = await createTask({
+        title: 'Project Development Session',
+        description: 'Focus block suggested by DailyFlow AI',
+        dueAt: due.toISOString(),
+        priority: 'high',
+        category: 'Work',
+      });
+
+      setTasks((prev) => [res.data, ...prev]);
+      addToast({
+        title: 'Task Scheduled! 🤖',
+        message: 'Scheduled "Project Development" for 2:00 PM',
+        type: 'success',
+      });
+    } catch {
+      addToast({ title: 'Could not schedule task', type: 'error' });
+    }
+  }
+
+  return (
+    <div className={styles.layout}>
+      {/* ── Left Sidebar ───────────────────────────────────── */}
+      <aside className={styles.sidebar}>
+        {/* Brand */}
+        <div className={styles.brand}>
+          <div className={styles.brandIcon}>📅</div>
+          <div>
+            <div className={styles.brandName}>Daily Planner AI</div>
+            <div className={styles.brandSub}>Plan Smarter. Achieve More.</div>
+          </div>
+        </div>
+
+        {/* Navigation */}
+        <nav className={styles.nav}>
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              id={`nav-${item.id}`}
+              className={
+                styles.navItem + (activeNav === item.id ? ' ' + styles.navActive : '')
+              }
+              onClick={() => {
+                if (item.id === 'ai') {
+                  setChatOpen(true);
+                } else {
+                  setActiveNav(item.id);
+                }
+              }}
+            >
+              <span className={styles.navIcon}>{item.icon}</span>
+              <span>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+
+        {/* Upgrade to Pro Card */}
+        <div className={styles.upgradeCard}>
+          <div className={styles.upgradeTitle}>Upgrade to Pro ✨</div>
+          <div className={styles.upgradeText}>
+            Unlock advanced AI planning, custom themes, and unlimited habits.
+          </div>
+          <button
+            className={styles.upgradeBtn}
+            onClick={() => setShowUpgradeModal(true)}
+          >
+            Upgrade Now
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main Canvas ────────────────────────────────────── */}
+      <main className={styles.main}>
+        {/* Top Header */}
+        <header className={styles.topHeader}>
+          <div>
+            <h1 className={styles.greetingTitle}>
+              {greeting}, <span className={styles.greetingName}>{userName}</span>! 👋
+            </h1>
+            <p className={styles.greetingSub}>Let&apos;s make today productive and amazing.</p>
+          </div>
+
+          <div className={styles.headerActions}>
+            <div className={styles.datePill}>
+              <span>📅</span>
+              <span>{dateString}</span>
+            </div>
+
+            <div className={styles.searchBox}>
+              <span>🔍</span>
+              <input
+                type="text"
+                placeholder="Search tasks..."
+                className={styles.searchInput}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+
+            {/* Top-Right Theme Selector */}
+            <div className={styles.themeHeaderSelector}>
+              <span>{isDark ? '🌙' : '☀️'}</span>
+              <select
+                className={styles.themeHeaderSelect}
+                value={theme}
+                onChange={(e) => setTheme(e.target.value)}
+                id="top-right-theme-select"
+                aria-label="Color Theme"
+              >
+                <option value="light">Light Mode</option>
+                <option value="dark">Dark Mode</option>
+              </select>
+            </div>
+
+            <button
+              className={styles.iconBtn}
+              onClick={() => setActiveNav('reminders')}
+              title="Notifications & Reminders"
+            >
+              🔔
+              <span className={styles.notifBadge}>3</span>
+            </button>
+
+            <div
+              className={styles.userAvatar}
+              onClick={() => setShowProfileModal(true)}
+              title="My Profile & Settings"
+            >
+              {userAvatarEmoji}
+            </div>
+          </div>
+        </header>
+
+        {/* ── DYNAMIC VIEW SWITCHER ───────────────────────── */}
+        {activeNav === 'my_day' && (
+          <MyDayView
+            tasks={tasks}
+            onToggleComplete={handleToggleComplete}
+            onDeleteTask={handleDelete}
+            onAddTask={handleDirectAddTask}
+            onOpenChat={() => setChatOpen(true)}
+          />
+        )}
+
+        {activeNav === 'tasks' && (
+          <TasksView
+            tasks={tasks}
+            onToggleComplete={handleToggleComplete}
+            onDeleteTask={handleDelete}
+            onOpenAddTask={() => { setEditingTask(null); setShowForm(true); }}
+            onEditTask={(t) => { setEditingTask(t); setShowForm(true); }}
+          />
+        )}
+
+        {activeNav === 'calendar' && (
+          <CalendarView
+            tasks={tasks}
+            onOpenAddTask={() => { setEditingTask(null); setShowForm(true); }}
+            onToggleComplete={handleToggleComplete}
+          />
+        )}
+
+        {activeNav === 'goals' && <GoalsView />}
+
+        {activeNav === 'habits' && <HabitsView />}
+
+        {activeNav === 'analytics' && <AnalyticsView tasks={tasks} />}
+
+        {activeNav === 'reminders' && <RemindersView tasks={tasks} />}
+
+        {activeNav === 'notes' && <NotesView />}
+
+        {/* Default Dashboard Overview (activeNav === 'dashboard') */}
+        {activeNav === 'dashboard' && (
+          <>
+            {/* 4 Metric Stats Cards */}
+            <section className={styles.metricsGrid}>
+              <div className={styles.metricCard}>
+                <div className={styles.metricIconWrapper} style={{ background: 'var(--purple-bg)', color: 'var(--purple)' }}>
+                  📑
+                </div>
+                <div className={styles.metricInfo}>
+                  <div className={styles.metricValue}>{todayTaskCount}</div>
+                  <div className={styles.metricLabel}>Tasks Today</div>
+                </div>
+              </div>
+
+              <div className={styles.metricCard}>
+                <div className={styles.metricIconWrapper} style={{ background: 'var(--green-bg)', color: 'var(--green)' }}>
+                  ✅
+                </div>
+                <div className={styles.metricInfo}>
+                  <div className={styles.metricValue}>{completedTodayCount}</div>
+                  <div className={styles.metricLabel}>Completed</div>
+                </div>
+              </div>
+
+              <div className={styles.metricCard}>
+                <div className={styles.metricIconWrapper} style={{ background: 'var(--yellow-bg)', color: 'var(--yellow)' }}>
+                  ⏱️
+                </div>
+                <div className={styles.metricInfo}>
+                  <div className={styles.metricValue}>2h 30m</div>
+                  <div className={styles.metricLabel}>Focus Time</div>
+                </div>
+              </div>
+
+              <div className={styles.metricCard}>
+                <div className={styles.metricIconWrapper} style={{ background: 'var(--blue-dim)', color: 'var(--blue)' }}>
+                  🔥
+                </div>
+                <div className={styles.metricInfo}>
+                  <div className={styles.metricValue}>{user?.streakDays || 12}</div>
+                  <div className={styles.metricLabel}>Day Streak</div>
+                </div>
+              </div>
+            </section>
+
+            {/* 3-Column Middle Section */}
+            <section className={styles.contentGrid}>
+              {/* Column 1: Today's Schedule (Timeline View) */}
+              <div className={styles.panelCard}>
+                <div className={styles.panelHeader}>
+                  <h2 className={styles.panelTitle}>
+                    <span>🗓️</span>
+                    <span>Today&apos;s Schedule</span>
+                  </h2>
+                </div>
+
+                <div className={styles.timelineList}>
+                  {DEFAULT_SCHEDULE_ROUTINE.map((item, idx) => (
+                    <div key={idx} className={styles.timelineItem}>
+                      <div className={styles.timelineTime}>
+                        <span className={styles.timelineStart}>{item.time.split(' - ')[0]}</span>
+                        <span className={styles.timelineEnd}>{item.time.split(' - ')[1]}</span>
+                      </div>
+                      <div className={styles.timelineDot} style={{ background: item.dotColor }} />
+                      <div className={styles.timelineCard} style={{ background: item.bg }}>
+                        <div className={styles.timelineTitle}>{item.title}</div>
+                        <div className={styles.timelineMeta}>
+                          <span>📍</span>
+                          <span>{item.meta}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Column 2: My Tasks */}
+              <div className={styles.panelCard}>
+                <div className={styles.panelHeader}>
+                  <h2 className={styles.panelTitle}>
+                    <span>☑️</span>
+                    <span>My Tasks</span>
+                  </h2>
+                  <button
+                    id="dashboard-add-task-btn"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => { setEditingTask(null); setShowForm(true); }}
+                  >
+                    + Add Task
+                  </button>
+                </div>
+
+                <div className={styles.taskTabs}>
+                  <button
+                    className={styles.taskTab + (activeTab === 'all' ? ' ' + styles.taskTabActive : '')}
+                    onClick={() => setActiveTab('all')}
+                  >
+                    All
+                  </button>
+                  <button
+                    className={styles.taskTab + (activeTab === 'pending' ? ' ' + styles.taskTabActive : '')}
+                    onClick={() => setActiveTab('pending')}
+                  >
+                    Pending
+                  </button>
+                  <button
+                    className={styles.taskTab + (activeTab === 'done' ? ' ' + styles.taskTabActive : '')}
+                    onClick={() => setActiveTab('done')}
+                  >
+                    Completed
+                  </button>
+                </div>
+
+                <div className={styles.taskList}>
+                  {loading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}>
+                      <span className="spinner" />
+                    </div>
+                  ) : displayedTasks.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '36px 0', fontSize: '0.85rem' }}>
+                      ✨ No tasks found in this view. Click <strong>+ Add Task</strong> above!
+                    </div>
+                  ) : (
+                    displayedTasks.map((t) => {
+                      const isDone = t.status === 'done';
+                      const dueTime = new Date(t.dueAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+                      return (
+                        <div key={t.id} className={styles.taskItem}>
+                          <div className={styles.taskLeft}>
+                            <button
+                              className={styles.checkboxBtn + (isDone ? ' ' + styles.checkboxBtnDone : '')}
+                              onClick={() => handleToggleComplete(t)}
+                              title={isDone ? 'Mark Pending' : 'Mark Complete'}
+                            >
+                              {isDone ? '✓' : ''}
+                            </button>
+                            <span className={styles.taskTitleText + (isDone ? ' ' + styles.taskTitleDone : '')}>
+                              {t.title}
+                            </span>
+                          </div>
+
+                          <div className={styles.taskRight}>
+                            {t.category && (
+                              <span className={`badge ${t.category.toLowerCase().includes('work') ? 'badge-purple' : t.category.toLowerCase().includes('health') ? 'badge-yellow' : 'badge-green'}`}>
+                                {t.category}
+                              </span>
+                            )}
+                            <span className={styles.taskTimeLabel}>{dueTime}</span>
+                            <button
+                              className="btn btn-ghost btn-sm"
+                              style={{ padding: '3px 6px', fontSize: '0.75rem' }}
+                              onClick={() => handleDelete(t.id)}
+                              title="Delete task"
+                            >
+                              🗑
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                <button
+                  className={styles.viewAllLink}
+                  onClick={() => setActiveNav('tasks')}
+                >
+                  View All Tasks →
+                </button>
+              </div>
+
+              {/* Column 3: Right Panel (AI & Widgets) */}
+              <div className={styles.rightWidgets}>
+                {/* AI Suggestions */}
+                <div className={styles.aiWidget}>
+                  <div className={styles.aiHeader}>
+                    <div className={styles.aiTitle}>
+                      <span>✨</span>
+                      <span>AI Suggestions</span>
+                    </div>
+                    <div className={styles.aiRobotAvatar}>🤖</div>
+                  </div>
+
+                  <div className={styles.aiBubble}>
+                    <div className={styles.aiBubbleText}>
+                      You have a 2-hour free slot this afternoon. Shall I schedule &ldquo;Project Development&rdquo; task for you?
+                    </div>
+                    <div className={styles.aiActions}>
+                      <button
+                        className={styles.aiPrimaryBtn}
+                        onClick={handleScheduleAiSuggestion}
+                      >
+                        Schedule it
+                      </button>
+                      <button
+                        className={styles.aiSecondaryBtn}
+                        onClick={() => setChatOpen(true)}
+                      >
+                        Ask Gemini
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className={styles.aiTipsList}>
+                    <div className={styles.aiTipItem} onClick={() => setChatOpen(true)}>
+                      <span>🎯 Focus on high priority tasks first</span>
+                      <span>›</span>
+                    </div>
+                    <div className={styles.aiTipItem} onClick={() => setChatOpen(true)}>
+                      <span>📈 You complete tasks faster in morning</span>
+                      <span>›</span>
+                    </div>
+                    <div className={styles.aiTipItem} onClick={() => setChatOpen(true)}>
+                      <span>☕ Take a 10 min break around 4:00 PM</span>
+                      <span>›</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Goals */}
+                <div className={styles.goalsWidget}>
+                  <div className={styles.panelHeader}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>🎯</span>
+                      <span>Goals</span>
+                    </div>
+                    <span
+                      style={{ fontSize: '0.74rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer' }}
+                      onClick={() => setActiveNav('goals')}
+                    >
+                      View All
+                    </span>
+                  </div>
+
+                  <div className={styles.goalItem}>
+                    <div className={styles.goalHeader}>
+                      <span>Launch Daily Planner AI</span>
+                      <span className={styles.goalPercent}>75%</span>
+                    </div>
+                    <div className={styles.goalProgressBar}>
+                      <div className={styles.goalProgressFill} style={{ width: '75%' }} />
+                    </div>
+                  </div>
+
+                  <div className={styles.goalItem}>
+                    <div className={styles.goalHeader}>
+                      <span>Read 12 books this year</span>
+                      <span className={styles.goalPercent}>50%</span>
+                    </div>
+                    <div className={styles.goalProgressBar}>
+                      <div className={styles.goalProgressFill} style={{ width: '50%', background: 'var(--green)' }} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Daily Progress */}
+                <div className={styles.progressWidget}>
+                  <div className={styles.panelHeader}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>📊</span>
+                      <span>Daily Progress</span>
+                    </div>
+                    <span
+                      style={{ fontSize: '0.74rem', color: 'var(--accent)', fontWeight: 700, cursor: 'pointer' }}
+                      onClick={() => setActiveNav('analytics')}
+                    >
+                      View Analytics
+                    </span>
+                  </div>
+
+                  <div className={styles.progressBody}>
+                    <div
+                      className={styles.progressRing}
+                      style={{ '--progress-deg': `${progressPercent}%` }}
+                    >
+                      <div className={styles.progressRingInner}>
+                        {progressPercent}%
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className={styles.progressTextHeading}>Great Progress!</div>
+                      <div className={styles.progressTextSub}>
+                        You&apos;re on track to achieve your daily targets.
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* Bottom Banner */}
+            <section className={styles.focusBanner}>
+              <div className={styles.focusLeft}>
+                <div className={styles.focusTitle}>
+                  <span>🎯</span>
+                  <span>Today&apos;s Focus</span>
+                </div>
+                <div className={styles.focusQuote}>
+                  &ldquo;Discipline is choosing between what you want now and what you want most.&rdquo;
+                </div>
+
+                <div className={styles.focusGoalBox}>
+                  <div className={styles.focusGoalHeader}>
+                    <span>Focus Time Goal</span>
+                    <span>2h 30m / 4h</span>
+                  </div>
+                  <div className={styles.focusGoalProgress}>
+                    <div className={styles.focusGoalFill} />
+                  </div>
+                </div>
+              </div>
+
+              <div className={styles.focusArt}>
+                💻🚀
+              </div>
+            </section>
+          </>
+        )}
+      </main>
+
+      {/* Task Form Modal */}
+      {showForm && (
+        <TaskForm
+          task={editingTask}
+          onClose={() => { setShowForm(false); setEditingTask(null); }}
+          onSaved={() => { fetchTasks(); setShowForm(false); }}
+        />
+      )}
+
+      {/* AI Assistant Chat Panel */}
+      {chatOpen && <ChatPanel onClose={() => setChatOpen(false)} onTasksUpdated={fetchTasks} />}
+
+      {/* Profile & Settings Modal */}
+      {showProfileModal && <ProfileModal onClose={() => setShowProfileModal(false)} />}
+
+      {/* Upgrade Modal */}
+      {showUpgradeModal && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'var(--modal-overlay)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            backdropFilter: 'blur(6px)',
+          }}
+          onClick={() => setShowUpgradeModal(false)}
+        >
+          <div
+            className="glass-card animate-scale"
+            style={{ maxWidth: 440, padding: 32, textAlign: 'center' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: 12 }}>👑</div>
+            <h2 style={{ fontSize: '1.4rem', marginBottom: 8 }}>DailyFlow Pro</h2>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.88rem', lineHeight: 1.6, marginBottom: 20 }}>
+              Unlock limitless potential with custom recurring habits, AI smart autoplanning, unlimited device sync, and priority Claude 3.7 scheduling.
+            </p>
+            <button
+              className="btn btn-primary"
+              style={{ width: '100%', padding: '12px' }}
+              onClick={() => {
+                setShowUpgradeModal(false);
+                addToast({ title: 'Pro Feature Unlocked 🎉', message: 'You have full access to all features!', type: 'success' });
+              }}
+            >
+              Activate Pro Membership ✨
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

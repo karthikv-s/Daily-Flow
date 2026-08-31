@@ -1,0 +1,13 @@
+.toggle {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 8px;
+  font-size: 0.8rem;
+  transition: all var(--transition);
+}
+
+.active {
+  background: var(--green-dim);
+  border-color: rgba(52, 211, 153, 0.3);
+  color: var(--green);
+}
