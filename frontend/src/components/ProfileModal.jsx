@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { updateProfile } from '../api';
@@ -10,52 +10,114 @@ export default function ProfileModal({ onClose }) {
   const { user, logout, refreshUser } = useAuth();
   const { addToast } = useToast();
   const fileInputRef = useRef(null);
-  const cameraInputRef = useRef(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
 
-  const [displayName, setDisplayName] = useState(() => {
-    return localStorage.getItem('user_display_name') || (user?.email ? user.email.split('@')[0] : 'Karthik');
-  });
+  const [displayName, setDisplayName] = useState(() =>
+    localStorage.getItem('user_display_name') || (user?.email ? user.email.split('@')[0] : 'Karthik')
+  );
 
-  // avatar can be an emoji string OR a base64 image data URL
-  const [avatar, setAvatar] = useState(() => {
-    return localStorage.getItem('user_avatar_img') || localStorage.getItem('user_avatar_emoji') || '🧑‍💻';
-  });
+  const [avatar, setAvatar] = useState(() =>
+    localStorage.getItem('user_avatar_img') || localStorage.getItem('user_avatar_emoji') || '🧑‍💻'
+  );
 
   const [email, setEmail] = useState(user?.email || '');
   const [saving, setSaving] = useState(false);
+  const [cameraOpen, setCameraOpen] = useState(false);
+  const [cameraReady, setCameraReady] = useState(false);
 
-  // true if avatar is an uploaded image (data URL), false if emoji
   const isImageAvatar = avatar && avatar.startsWith('data:');
 
+  // ── Gallery upload ──────────────────────────────────────────────
   function handleImageFile(file) {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       addToast({ title: 'Invalid file', message: 'Please select an image file.', type: 'error' });
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      addToast({ title: 'File too large', message: 'Please choose an image under 2MB.', type: 'error' });
+    if (file.size > 3 * 1024 * 1024) {
+      addToast({ title: 'File too large', message: 'Please choose an image under 3MB.', type: 'error' });
       return;
     }
     const reader = new FileReader();
-    reader.onload = (e) => {
-      setAvatar(e.target.result);
-    };
+    reader.onload = (e) => setAvatar(e.target.result);
     reader.readAsDataURL(file);
   }
 
+  // ── Camera (getUserMedia) ───────────────────────────────────────
+  const openCamera = useCallback(async () => {
+    setCameraOpen(true);
+    setCameraReady(false);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'user', width: { ideal: 400 }, height: { ideal: 400 } },
+        audio: false,
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.onloadedmetadata = () => {
+          videoRef.current.play();
+          setCameraReady(true);
+        };
+      }
+    } catch (err) {
+      setCameraOpen(false);
+      addToast({
+        title: 'Camera Access Denied',
+        message: 'Please allow camera permission in your browser and try again.',
+        type: 'error',
+      });
+    }
+  }, [addToast]);
+
+  const closeCamera = useCallback(() => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(t => t.stop());
+      streamRef.current = null;
+    }
+    setCameraOpen(false);
+    setCameraReady(false);
+  }, []);
+
+  const takePhoto = useCallback(() => {
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    if (!video || !canvas) return;
+
+    const size = 300;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+
+    // Draw circular crop
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+    ctx.clip();
+    // Center-crop the video frame into the square canvas
+    const vw = video.videoWidth, vh = video.videoHeight;
+    const side = Math.min(vw, vh);
+    const sx = (vw - side) / 2, sy = (vh - side) / 2;
+    ctx.drawImage(video, sx, sy, side, side, 0, 0, size, size);
+    ctx.restore();
+
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+    setAvatar(dataUrl);
+    closeCamera();
+  }, [closeCamera]);
+
+  // ── Save ────────────────────────────────────────────────────────
   async function handleSave(e) {
     e.preventDefault();
     if (!email.trim()) return;
-
     setSaving(true);
     try {
       if (email.trim() !== user?.email) {
         await updateProfile({ email: email.trim() });
       }
-
       localStorage.setItem('user_display_name', displayName.trim());
-
       if (isImageAvatar) {
         localStorage.setItem('user_avatar_img', avatar);
         localStorage.removeItem('user_avatar_emoji');
@@ -63,21 +125,11 @@ export default function ProfileModal({ onClose }) {
         localStorage.setItem('user_avatar_emoji', avatar);
         localStorage.removeItem('user_avatar_img');
       }
-
-      addToast({
-        title: 'Profile Updated! ✨',
-        message: 'Your profile settings have been saved.',
-        type: 'success',
-      });
-
+      addToast({ title: 'Profile Updated! ✨', message: 'Your settings have been saved.', type: 'success' });
       if (refreshUser) refreshUser();
       onClose();
     } catch (err) {
-      addToast({
-        title: 'Update Failed',
-        message: err.response?.data?.error || 'Could not update profile',
-        type: 'error',
-      });
+      addToast({ title: 'Update Failed', message: err.response?.data?.error || 'Could not update profile', type: 'error' });
     } finally {
       setSaving(false);
     }
@@ -86,23 +138,54 @@ export default function ProfileModal({ onClose }) {
   return (
     <div className={styles.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
       <div className={styles.modal + ' animate-scale'}>
+
+        {/* ── Camera Overlay ── */}
+        {cameraOpen && (
+          <div className={styles.cameraOverlay}>
+            <div className={styles.cameraBox}>
+              <div className={styles.cameraHeader}>
+                <span>📷 Take a Photo</span>
+                <button type="button" className="btn btn-ghost btn-icon" onClick={closeCamera}>✕</button>
+              </div>
+              <div className={styles.cameraViewport}>
+                <video ref={videoRef} className={styles.cameraVideo} playsInline muted autoPlay />
+                {!cameraReady && (
+                  <div className={styles.cameraLoading}>
+                    <span className="spinner" />
+                    <span>Starting camera…</span>
+                  </div>
+                )}
+              </div>
+              <canvas ref={canvasRef} style={{ display: 'none' }} />
+              <div className={styles.cameraActions}>
+                <button type="button" className="btn btn-ghost btn-sm" onClick={closeCamera}>Cancel</button>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={takePhoto}
+                  disabled={!cameraReady}
+                >
+                  📸 Capture
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Header */}
         <div className={styles.header}>
           <div className={styles.title}>
             <span>👤</span>
             <span>Profile & Settings</span>
           </div>
-          <button className="btn btn-ghost btn-icon" onClick={onClose} title="Close (Esc)">
-            ✕
-          </button>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}>✕</button>
         </div>
 
-        {/* Body Form */}
+        {/* Body */}
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <div className={styles.body}>
-            {/* Avatar Section */}
+            {/* Avatar */}
             <div className={styles.avatarSection}>
-              {/* Current Avatar Display */}
               <div
                 className={styles.currentAvatar}
                 style={isImageAvatar ? { padding: 0, overflow: 'hidden', background: 'transparent' } : {}}
@@ -113,37 +196,20 @@ export default function ProfileModal({ onClose }) {
                 }
               </div>
 
-              {/* Upload Buttons */}
               <div className={styles.uploadButtons}>
-                <button
-                  type="button"
-                  className={styles.uploadBtn}
-                  onClick={() => fileInputRef.current?.click()}
-                  title="Choose from gallery"
-                >
+                <button type="button" className={styles.uploadBtn} onClick={() => fileInputRef.current?.click()}>
                   🖼️ Gallery
                 </button>
-                <button
-                  type="button"
-                  className={styles.uploadBtn}
-                  onClick={() => cameraInputRef.current?.click()}
-                  title="Take a photo"
-                >
+                <button type="button" className={styles.uploadBtn} onClick={openCamera}>
                   📷 Camera
                 </button>
                 {isImageAvatar && (
-                  <button
-                    type="button"
-                    className={styles.uploadBtnRemove}
-                    onClick={() => setAvatar('🧑‍💻')}
-                    title="Remove photo"
-                  >
+                  <button type="button" className={styles.uploadBtnRemove} onClick={() => setAvatar('🧑‍💻')}>
                     ✕ Remove
                   </button>
                 )}
               </div>
 
-              {/* Hidden file inputs */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -151,16 +217,7 @@ export default function ProfileModal({ onClose }) {
                 style={{ display: 'none' }}
                 onChange={(e) => handleImageFile(e.target.files?.[0])}
               />
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="user"
-                style={{ display: 'none' }}
-                onChange={(e) => handleImageFile(e.target.files?.[0])}
-              />
 
-              {/* Emoji Presets */}
               <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: 4 }}>
                 — or pick an emoji avatar —
               </div>
@@ -178,32 +235,16 @@ export default function ProfileModal({ onClose }) {
               </div>
             </div>
 
-            {/* User Details Fields */}
+            {/* Fields */}
             <div className="form-group">
               <label className="form-label">Display Name / Username</label>
-              <input
-                type="text"
-                className="form-input"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Enter your name"
-                required
-              />
+              <input type="text" className="form-input" value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Enter your name" required />
             </div>
-
             <div className="form-group">
               <label className="form-label">Email Address</label>
-              <input
-                type="email"
-                className="form-input"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="your.email@example.com"
-                required
-              />
+              <input type="email" className="form-input" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="your.email@example.com" required />
             </div>
 
-            {/* Performance Summary */}
             <div className={styles.statsSummary}>
               <div className={styles.statItem}>
                 <span className={styles.statLabel}>Total Points</span>
@@ -216,23 +257,12 @@ export default function ProfileModal({ onClose }) {
             </div>
           </div>
 
-          {/* Footer Actions */}
           <div className={styles.footer}>
-            <button
-              type="button"
-              className={styles.logoutBtn}
-              onClick={() => {
-                onClose();
-                logout();
-              }}
-            >
+            <button type="button" className={styles.logoutBtn} onClick={() => { onClose(); logout(); }}>
               🚪 Sign Out
             </button>
-
             <div style={{ display: 'flex', gap: 8 }}>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>
-                Cancel
-              </button>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={onClose}>Cancel</button>
               <button type="submit" className="btn btn-primary btn-sm" disabled={saving}>
                 {saving ? 'Saving...' : 'Save Changes'}
               </button>
