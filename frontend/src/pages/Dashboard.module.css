@@ -884,6 +884,12 @@
   animation: pulse 4s infinite ease-in-out;
 }
 
+
+/* ── Bottom Mobile Nav ─────────────────────────────────────── */
+.mobileBottomNav {
+  display: none;
+}
+
 /* ── Responsive ───────────────────────────────────────────── */
 @media (max-width: 1200px) {
   .contentGrid {
@@ -897,12 +903,6 @@
 }
 
 @media (max-width: 900px) {
-  .layout { flex-direction: column; }
-  .sidebar {
-    width: 100%;
-    height: auto;
-    position: static;
-  }
   .metricsGrid { grid-template-columns: 1fr 1fr; }
   .contentGrid { grid-template-columns: 1fr; }
   .rightWidgets {
@@ -912,8 +912,126 @@
   .focusBanner { flex-direction: column; align-items: flex-start; }
 }
 
-@media (max-width: 600px) {
-  .main { padding: 16px; }
-  .metricsGrid { grid-template-columns: 1fr; }
-  .topHeader { flex-direction: column; align-items: flex-start; }
+/* ── Mobile (≤ 768px): Sidebar hidden, bottom nav shown ────── */
+@media (max-width: 768px) {
+  /* hide desktop sidebar completely */
+  .sidebar {
+    display: none !important;
+  }
+
+  /* layout fills full width */
+  .layout {
+    flex-direction: column;
+  }
+
+  .main {
+    padding: 12px;
+    padding-bottom: 80px; /* space for bottom nav */
+    width: 100%;
+    overflow-x: hidden;
+  }
+
+  /* header stacks nicely */
+  .topHeader {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 0;
+  }
+  .headerLeft { flex: 0 0 100%; }
+  .headerRight { gap: 8px; }
+  .searchBox { display: none; } /* hide search on mobile */
+
+  /* stat cards: 2 column grid */
+  .metricsGrid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .metricCard { padding: 12px; }
+  .metricValue { font-size: 1.4rem; }
+
+  /* all content in single column */
+  .contentGrid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .rightWidgets {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .focusBanner { flex-direction: column; }
+  .focusArt { display: none; }
+
+  /* ── Bottom Navigation Bar ── */
+  .mobileBottomNav {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: var(--bg-sidebar);
+    border-top: 1px solid var(--border);
+    padding: 6px 4px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+    justify-content: space-around;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .mobileNavItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: background 0.15s ease;
+    flex: 1;
+    max-width: 70px;
+  }
+  .mobileNavItem:active {
+    transform: scale(0.9);
+  }
+  .mobileNavItemActive {
+    background: var(--accent-dim);
+  }
+  .mobileNavIcon {
+    font-size: 1.3rem;
+    line-height: 1;
+  }
+  .mobileNavLabel {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 56px;
+  }
+  .mobileNavItemActive .mobileNavLabel {
+    color: var(--accent);
+  }
+  .mobileNavMore {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 8px;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    flex: 1;
+    max-width: 70px;
+  }
+}
+
+@media (max-width: 400px) {
+  .metricsGrid { grid-template-columns: 1fr 1fr; }
+  .metricCard { padding: 10px; }
+  .metricValue { font-size: 1.2rem; }
 }

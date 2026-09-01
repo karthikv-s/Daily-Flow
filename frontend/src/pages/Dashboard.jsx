@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -45,9 +45,19 @@ export default function Dashboard() {
   const { addToast } = useToast();
   const { theme, setTheme, isDark } = useTheme();
 
-  const [activeNav, setActiveNav]     = useState('dashboard');
+  const [activeNav, setActiveNavRaw] = useState('dashboard');
   const [tasks, setTasks]             = useState([]);
   const [loading, setLoading]         = useState(true);
+  const mainRef = useRef(null);
+
+  // Navigate to a view and always scroll to top
+  function setActiveNav(id) {
+    setActiveNavRaw(id);
+    setTimeout(() => {
+      if (mainRef.current) mainRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+      else window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 50);
+  }
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab]     = useState('all'); // all | pending | done
   const [showForm, setShowForm]       = useState(false);
@@ -301,7 +311,7 @@ export default function Dashboard() {
       </aside>
 
       {/* ── Main Canvas ────────────────────────────────────── */}
-      <main className={styles.main}>
+      <main ref={mainRef} className={styles.main}>
         {/* Top Header */}
         <header className={styles.topHeader}>
           <div>
@@ -863,6 +873,36 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+      {/* ── Mobile Bottom Nav (hidden on desktop via CSS) ── */}
+      <nav className={styles.mobileBottomNav}>
+        {[{ id: 'dashboard', icon: '🏠', label: 'Home' },
+          { id: 'tasks',     icon: '☑️', label: 'Tasks' },
+          { id: 'my_day',   icon: '🌤️', label: 'My Day' },
+          { id: 'ai',       icon: '🤖', label: 'AI' },
+          { id: 'notes',    icon: '📝', label: 'Notes' },
+        ].map((item) => (
+          <button
+            key={item.id}
+            className={styles.mobileNavItem + (activeNav === item.id ? ' ' + styles.mobileNavItemActive : '')}
+            onClick={() => setActiveNav(item.id)}
+          >
+            <span className={styles.mobileNavIcon}>{item.icon}</span>
+            <span className={styles.mobileNavLabel}>{item.label}</span>
+          </button>
+        ))}
+        {/* More button opens a quick sheet */}
+        <button
+          className={styles.mobileNavItem + (['calendar','goals','habits','analytics','reminders'].includes(activeNav) ? ' ' + styles.mobileNavItemActive : '')}
+          onClick={() => {
+            const more = ['calendar','goals','habits','analytics','reminders'];
+            const cur = more.indexOf(activeNav);
+            setActiveNav(more[(cur + 1) % more.length]);
+          }}
+        >
+          <span className={styles.mobileNavIcon}>⋯</span>
+          <span className={styles.mobileNavLabel}>More</span>
+        </button>
+      </nav>
     </div>
   );
 }
