@@ -149,10 +149,16 @@ export default function Dashboard() {
     const isDone = task.status === 'done';
     const newStatus = isDone ? 'pending' : 'done';
 
+    // ⚡ Optimistic update: instantly flip the UI without waiting for the server
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, status: newStatus, completedAt: newStatus === 'done' ? new Date().toISOString() : null } : t))
+    );
+
     try {
       const res = await updateTask(task.id, { status: newStatus });
       const { pointsAwarded, newBadges } = res.data;
 
+      // Sync with actual server response data
       setTasks((prev) =>
         prev.map((t) => (t.id === task.id ? { ...t, ...res.data.task } : t))
       );
@@ -185,9 +191,14 @@ export default function Dashboard() {
       }
       refreshUser();
     } catch {
+      // Revert the optimistic update on failure
+      setTasks((prev) =>
+        prev.map((t) => (t.id === task.id ? { ...t, status: task.status } : t))
+      );
       addToast({ title: 'Could not update task status', type: 'error' });
     }
   }
+
 
   // Delete Task
   async function handleDelete(id) {
