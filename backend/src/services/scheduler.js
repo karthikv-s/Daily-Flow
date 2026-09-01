@@ -129,7 +129,28 @@ function startScheduler() {
     }
   });
 
+  // ── Every day at midnight 00:01: remove completed tasks from prev days ──
+  cron.schedule('1 0 * * *', async () => {
+    try {
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      // Delete all tasks that are 'done' AND whose dueAt was before today
+      const result = await prisma.task.deleteMany({
+        where: {
+          status: 'done',
+          dueAt: { lt: startOfToday },
+        },
+      });
+
+      console.log(`[Scheduler] Midnight cleanup: removed ${result.count} completed task(s) from previous days.`);
+    } catch (err) {
+      console.error('[Scheduler] Error in midnight cleanup job:', err.message);
+    }
+  });
+
   console.log('[Scheduler] All cron jobs started');
+
 }
 
 module.exports = { startScheduler };
