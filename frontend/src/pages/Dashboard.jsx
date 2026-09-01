@@ -32,13 +32,13 @@ const NAV_ITEMS = [
   { id: 'notes',     label: 'Notes',     icon: '📝' },
 ];
 
-const DEFAULT_SCHEDULE_ROUTINE = [
-  { time: '09:00 AM - 10:00 AM', title: 'Team Standup Meeting', meta: 'Google Meet', dotColor: '#8b5cf6', bg: 'var(--purple-bg)' },
-  { time: '10:30 AM - 12:00 PM', title: 'Deep Work Session',    meta: 'Focus Block', dotColor: '#3b82f6', bg: 'var(--blue-dim)' },
-  { time: '12:00 PM - 01:00 PM', title: 'Lunch Break & Walk',   meta: 'Wellness',    dotColor: '#10b981', bg: 'var(--green-bg)' },
-  { time: '01:00 PM - 03:00 PM', title: 'Project Development',  meta: 'DailyFlow AI Features', dotColor: '#f59e0b', bg: 'var(--yellow-bg)' },
-  { time: '04:00 PM - 05:00 PM', title: 'Review & Daily Planning', meta: 'Organize next day', dotColor: '#ec4899', bg: 'var(--accent-dim)' },
-];
+const CATEGORY_DOT_COLORS = {
+  work:     { dot: '#8b5cf6', bg: 'var(--purple-bg)' },
+  study:    { dot: '#3b82f6', bg: 'var(--blue-dim)' },
+  health:   { dot: '#10b981', bg: 'var(--green-bg)' },
+  personal: { dot: '#f59e0b', bg: 'var(--yellow-bg)' },
+  default:  { dot: '#ec4899', bg: 'var(--accent-dim)' },
+};
 
 export default function Dashboard() {
   const { user, logout, refreshUser } = useAuth();
@@ -429,7 +429,7 @@ export default function Dashboard() {
                   🔥
                 </div>
                 <div className={styles.metricInfo}>
-                  <div className={styles.metricValue}>{user?.streakDays || 12}</div>
+                  <div className={styles.metricValue}>{user?.streakDays ?? 0}</div>
                   <div className={styles.metricLabel}>Day Streak</div>
                 </div>
               </div>
@@ -437,7 +437,7 @@ export default function Dashboard() {
 
             {/* 3-Column Middle Section */}
             <section className={styles.contentGrid}>
-              {/* Column 1: Today's Schedule (Timeline View) */}
+              {/* Column 1: Today's Schedule (Real Tasks Timeline) */}
               <div className={styles.panelCard}>
                 <div className={styles.panelHeader}>
                   <h2 className={styles.panelTitle}>
@@ -447,22 +447,49 @@ export default function Dashboard() {
                 </div>
 
                 <div className={styles.timelineList}>
-                  {DEFAULT_SCHEDULE_ROUTINE.map((item, idx) => (
-                    <div key={idx} className={styles.timelineItem}>
-                      <div className={styles.timelineTime}>
-                        <span className={styles.timelineStart}>{item.time.split(' - ')[0]}</span>
-                        <span className={styles.timelineEnd}>{item.time.split(' - ')[1]}</span>
-                      </div>
-                      <div className={styles.timelineDot} style={{ background: item.dotColor }} />
-                      <div className={styles.timelineCard} style={{ background: item.bg }}>
-                        <div className={styles.timelineTitle}>{item.title}</div>
-                        <div className={styles.timelineMeta}>
-                          <span>📍</span>
-                          <span>{item.meta}</span>
+                  {(() => {
+                    const today = new Date();
+                    const todayTasks = tasks
+                      .filter(t => {
+                        const d = new Date(t.dueAt);
+                        return d.getFullYear() === today.getFullYear() &&
+                               d.getMonth() === today.getMonth() &&
+                               d.getDate() === today.getDate();
+                      })
+                      .sort((a, b) => new Date(a.dueAt) - new Date(b.dueAt));
+
+                    if (todayTasks.length === 0) {
+                      return (
+                        <div style={{ textAlign: 'center', padding: '36px 16px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                          <div style={{ fontSize: '2rem', marginBottom: 10 }}>📋</div>
+                          <div>No tasks scheduled for today.</div>
+                          <div style={{ marginTop: 6 }}>Click <strong>+ Add Task</strong> to plan your day!</div>
                         </div>
-                      </div>
-                    </div>
-                  ))}
+                      );
+                    }
+
+                    return todayTasks.map((t, idx) => {
+                      const cat = (t.category || 'default').toLowerCase();
+                      const colors = CATEGORY_DOT_COLORS[cat] || CATEGORY_DOT_COLORS.default;
+                      const dueTime = new Date(t.dueAt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+                      return (
+                        <div key={t.id} className={styles.timelineItem}>
+                          <div className={styles.timelineTime}>
+                            <span className={styles.timelineStart}>{dueTime}</span>
+                            <span className={styles.timelineEnd}>{t.status === 'done' ? '✓' : '·'}</span>
+                          </div>
+                          <div className={styles.timelineDot} style={{ background: colors.dot }} />
+                          <div className={styles.timelineCard} style={{ background: colors.bg }}>
+                            <div className={styles.timelineTitle} style={{ textDecoration: t.status === 'done' ? 'line-through' : 'none', opacity: t.status === 'done' ? 0.6 : 1 }}>{t.title}</div>
+                            <div className={styles.timelineMeta}>
+                              <span>🏷️</span>
+                              <span>{t.category || 'General'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
 
@@ -564,7 +591,7 @@ export default function Dashboard() {
 
               {/* Column 3: Right Panel (AI & Widgets) */}
               <div className={styles.rightWidgets}>
-                {/* AI Suggestions */}
+                {/* AI Suggestions - only shown when user has tasks */}
                 <div className={styles.aiWidget}>
                   <div className={styles.aiHeader}>
                     <div className={styles.aiTitle}>
@@ -574,43 +601,72 @@ export default function Dashboard() {
                     <div className={styles.aiRobotAvatar}>🤖</div>
                   </div>
 
-                  <div className={styles.aiBubble}>
-                    <div className={styles.aiBubbleText}>
-                      You have a 2-hour free slot this afternoon. Shall I schedule &ldquo;Project Development&rdquo; task for you?
+                  {tasks.length === 0 ? (
+                    <div className={styles.aiBubble}>
+                      <div className={styles.aiBubbleText}>
+                        👋 Welcome! Add your first task to get personalized AI planning suggestions and schedule recommendations.
+                      </div>
+                      <div className={styles.aiActions}>
+                        <button
+                          className={styles.aiPrimaryBtn}
+                          onClick={() => { setEditingTask(null); setShowForm(true); }}
+                        >
+                          + Add First Task
+                        </button>
+                        <button
+                          className={styles.aiSecondaryBtn}
+                          onClick={() => setChatOpen(true)}
+                        >
+                          Ask Gemini
+                        </button>
+                      </div>
                     </div>
-                    <div className={styles.aiActions}>
-                      <button
-                        className={styles.aiPrimaryBtn}
-                        onClick={handleScheduleAiSuggestion}
-                      >
-                        Schedule it
-                      </button>
-                      <button
-                        className={styles.aiSecondaryBtn}
-                        onClick={() => setChatOpen(true)}
-                      >
-                        Ask Gemini
-                      </button>
-                    </div>
-                  </div>
+                  ) : (
+                    <>
+                      <div className={styles.aiBubble}>
+                        <div className={styles.aiBubbleText}>
+                          {tasks.filter(t => t.status === 'pending').length > 0
+                            ? `You have ${tasks.filter(t => t.status === 'pending').length} pending task${tasks.filter(t => t.status === 'pending').length > 1 ? 's' : ''}. Want me to help prioritize?`
+                            : `Great job! All your tasks are done. Want to plan tomorrow?`
+                          }
+                        </div>
+                        <div className={styles.aiActions}>
+                          <button
+                            className={styles.aiPrimaryBtn}
+                            onClick={() => setChatOpen(true)}
+                          >
+                            Plan with Gemini
+                          </button>
+                          <button
+                            className={styles.aiSecondaryBtn}
+                            onClick={() => { setEditingTask(null); setShowForm(true); }}
+                          >
+                            + Add Task
+                          </button>
+                        </div>
+                      </div>
 
-                  <div className={styles.aiTipsList}>
-                    <div className={styles.aiTipItem} onClick={() => setChatOpen(true)}>
-                      <span>🎯 Focus on high priority tasks first</span>
-                      <span>›</span>
-                    </div>
-                    <div className={styles.aiTipItem} onClick={() => setChatOpen(true)}>
-                      <span>📈 You complete tasks faster in morning</span>
-                      <span>›</span>
-                    </div>
-                    <div className={styles.aiTipItem} onClick={() => setChatOpen(true)}>
-                      <span>☕ Take a 10 min break around 4:00 PM</span>
-                      <span>›</span>
-                    </div>
-                  </div>
+                      <div className={styles.aiTipsList}>
+                        {tasks.filter(t => t.priority === 'high' && t.status !== 'done').length > 0 && (
+                          <div className={styles.aiTipItem} onClick={() => setChatOpen(true)}>
+                            <span>🔴 You have high priority tasks pending</span>
+                            <span>›</span>
+                          </div>
+                        )}
+                        <div className={styles.aiTipItem} onClick={() => setChatOpen(true)}>
+                          <span>🎯 Ask Gemini to optimize your schedule</span>
+                          <span>›</span>
+                        </div>
+                        <div className={styles.aiTipItem} onClick={() => setActiveNav('analytics')}>
+                          <span>📊 View your productivity analytics</span>
+                          <span>›</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
 
-                {/* Goals */}
+                {/* Goals - pulled from localStorage */}
                 <div className={styles.goalsWidget}>
                   <div className={styles.panelHeader}>
                     <div style={{ fontSize: '0.88rem', fontWeight: 800, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -625,25 +681,29 @@ export default function Dashboard() {
                     </span>
                   </div>
 
-                  <div className={styles.goalItem}>
-                    <div className={styles.goalHeader}>
-                      <span>Launch Daily Planner AI</span>
-                      <span className={styles.goalPercent}>75%</span>
-                    </div>
-                    <div className={styles.goalProgressBar}>
-                      <div className={styles.goalProgressFill} style={{ width: '75%' }} />
-                    </div>
-                  </div>
-
-                  <div className={styles.goalItem}>
-                    <div className={styles.goalHeader}>
-                      <span>Read 12 books this year</span>
-                      <span className={styles.goalPercent}>50%</span>
-                    </div>
-                    <div className={styles.goalProgressBar}>
-                      <div className={styles.goalProgressFill} style={{ width: '50%', background: 'var(--green)' }} />
-                    </div>
-                  </div>
+                  {(() => {
+                    let goals = [];
+                    try { goals = JSON.parse(localStorage.getItem('user_goals') || '[]'); } catch {}
+                    if (goals.length === 0) {
+                      return (
+                        <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                          <div>No goals yet.</div>
+                          <button className="btn btn-ghost btn-sm" style={{ marginTop: 8 }} onClick={() => setActiveNav('goals')}>Set a Goal →</button>
+                        </div>
+                      );
+                    }
+                    return goals.slice(0, 2).map((g, i) => (
+                      <div key={g.id || i} className={styles.goalItem}>
+                        <div className={styles.goalHeader}>
+                          <span>{g.title}</span>
+                          <span className={styles.goalPercent}>{g.progress || 0}%</span>
+                        </div>
+                        <div className={styles.goalProgressBar}>
+                          <div className={styles.goalProgressFill} style={{ width: `${g.progress || 0}%` }} />
+                        </div>
+                      </div>
+                    ));
+                  })()}
                 </div>
 
                 {/* Daily Progress */}
