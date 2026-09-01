@@ -764,20 +764,42 @@ export default function Dashboard() {
                   &ldquo;Discipline is choosing between what you want now and what you want most.&rdquo;
                 </div>
 
-                <div className={styles.focusGoalBox}>
-                  <div className={styles.focusGoalHeader}>
-                    <span>Focus Time Goal</span>
-                    <span>2h 30m / 4h</span>
-                  </div>
-                  <div className={styles.focusGoalProgress}>
-                    <div className={styles.focusGoalFill} />
-                  </div>
-                </div>
+                {/* Real today's task completion progress */}
+                {(() => {
+                  const today = new Date();
+                  const todayTasks = tasks.filter(t => {
+                    const d = new Date(t.dueAt);
+                    return d.getFullYear() === today.getFullYear() &&
+                           d.getMonth() === today.getMonth() &&
+                           d.getDate() === today.getDate();
+                  });
+                  const totalToday = todayTasks.length;
+                  const doneToday = todayTasks.filter(t => t.status === 'done').length;
+                  const pct = totalToday === 0 ? 0 : Math.round((doneToday / totalToday) * 100);
+
+                  return (
+                    <div className={styles.focusGoalBox}>
+                      <div className={styles.focusGoalHeader}>
+                        <span>Today&apos;s Tasks</span>
+                        <span>{doneToday} / {totalToday} completed</span>
+                      </div>
+                      <div className={styles.focusGoalProgress}>
+                        <div className={styles.focusGoalFill} style={{ width: `${pct}%` }} />
+                      </div>
+                      {totalToday === 0 && (
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                          Add tasks to track your daily progress
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className={styles.focusArt}>
                 💻🚀
               </div>
+
             </section>
           </>
         )}
