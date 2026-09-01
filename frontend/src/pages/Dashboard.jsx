@@ -90,8 +90,9 @@ export default function Dashboard() {
   }, [user]);
 
   const userAvatarEmoji = useMemo(() => {
-    return localStorage.getItem('user_avatar_emoji') || '🧑‍💻';
+    return localStorage.getItem('user_avatar_img') || localStorage.getItem('user_avatar_emoji') || '🧑‍💻';
   }, [showProfileModal]);
+
 
 
   const dateString = useMemo(() => {
@@ -355,8 +356,12 @@ export default function Dashboard() {
               className={styles.userAvatar}
               onClick={() => setShowProfileModal(true)}
               title="My Profile & Settings"
+              style={userAvatarEmoji.startsWith('data:') ? { padding: 0, overflow: 'hidden', background: 'transparent', border: '2px solid var(--accent)' } : {}}
             >
-              {userAvatarEmoji}
+              {userAvatarEmoji.startsWith('data:')
+                ? <img src={userAvatarEmoji} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : userAvatarEmoji
+              }
             </div>
           </div>
         </header>

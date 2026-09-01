@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useToast } from '../contexts/ToastContext';
 import { updateProfile } from '../api';
@@ -9,17 +9,40 @@ const AVATAR_PRESETS = ['🧑‍💻', '🚀', '⚡', '🐱', '🎨', '💼', '�
 export default function ProfileModal({ onClose }) {
   const { user, logout, refreshUser } = useAuth();
   const { addToast } = useToast();
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
 
   const [displayName, setDisplayName] = useState(() => {
     return localStorage.getItem('user_display_name') || (user?.email ? user.email.split('@')[0] : 'Karthik');
   });
 
+  // avatar can be an emoji string OR a base64 image data URL
   const [avatar, setAvatar] = useState(() => {
-    return localStorage.getItem('user_avatar_emoji') || '🧑‍💻';
+    return localStorage.getItem('user_avatar_img') || localStorage.getItem('user_avatar_emoji') || '🧑‍💻';
   });
 
   const [email, setEmail] = useState(user?.email || '');
   const [saving, setSaving] = useState(false);
+
+  // true if avatar is an uploaded image (data URL), false if emoji
+  const isImageAvatar = avatar && avatar.startsWith('data:');
+
+  function handleImageFile(file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      addToast({ title: 'Invalid file', message: 'Please select an image file.', type: 'error' });
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      addToast({ title: 'File too large', message: 'Please choose an image under 2MB.', type: 'error' });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setAvatar(e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
 
   async function handleSave(e) {
     e.preventDefault();
@@ -32,7 +55,14 @@ export default function ProfileModal({ onClose }) {
       }
 
       localStorage.setItem('user_display_name', displayName.trim());
-      localStorage.setItem('user_avatar_emoji', avatar);
+
+      if (isImageAvatar) {
+        localStorage.setItem('user_avatar_img', avatar);
+        localStorage.removeItem('user_avatar_emoji');
+      } else {
+        localStorage.setItem('user_avatar_emoji', avatar);
+        localStorage.removeItem('user_avatar_img');
+      }
 
       addToast({
         title: 'Profile Updated! ✨',
@@ -70,20 +100,76 @@ export default function ProfileModal({ onClose }) {
         {/* Body Form */}
         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
           <div className={styles.body}>
-            {/* Avatar Selector */}
+            {/* Avatar Section */}
             <div className={styles.avatarSection}>
-              <div className={styles.currentAvatar}>
-                {avatar}
+              {/* Current Avatar Display */}
+              <div
+                className={styles.currentAvatar}
+                style={isImageAvatar ? { padding: 0, overflow: 'hidden', background: 'transparent' } : {}}
+              >
+                {isImageAvatar
+                  ? <img src={avatar} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  : avatar
+                }
               </div>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-secondary)' }}>
-                Choose Your Avatar:
+
+              {/* Upload Buttons */}
+              <div className={styles.uploadButtons}>
+                <button
+                  type="button"
+                  className={styles.uploadBtn}
+                  onClick={() => fileInputRef.current?.click()}
+                  title="Choose from gallery"
+                >
+                  🖼️ Gallery
+                </button>
+                <button
+                  type="button"
+                  className={styles.uploadBtn}
+                  onClick={() => cameraInputRef.current?.click()}
+                  title="Take a photo"
+                >
+                  📷 Camera
+                </button>
+                {isImageAvatar && (
+                  <button
+                    type="button"
+                    className={styles.uploadBtnRemove}
+                    onClick={() => setAvatar('🧑‍💻')}
+                    title="Remove photo"
+                  >
+                    ✕ Remove
+                  </button>
+                )}
+              </div>
+
+              {/* Hidden file inputs */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => handleImageFile(e.target.files?.[0])}
+              />
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="user"
+                style={{ display: 'none' }}
+                onChange={(e) => handleImageFile(e.target.files?.[0])}
+              />
+
+              {/* Emoji Presets */}
+              <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: 4 }}>
+                — or pick an emoji avatar —
               </div>
               <div className={styles.avatarPresetsGrid}>
                 {AVATAR_PRESETS.map((p) => (
                   <button
                     key={p}
                     type="button"
-                    className={styles.presetBtn + (avatar === p ? ' ' + styles.presetActive : '')}
+                    className={styles.presetBtn + (!isImageAvatar && avatar === p ? ' ' + styles.presetActive : '')}
                     onClick={() => setAvatar(p)}
                   >
                     {p}
