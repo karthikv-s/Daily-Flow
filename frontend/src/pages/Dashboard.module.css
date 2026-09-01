@@ -135,8 +135,8 @@
 
 .upgradeBtn {
   background: #ffffff;
-  color: #4f46e5;
-  font-weight: 700;
+  color: #065f46;
+  font-weight: 800;
   font-size: 0.78rem;
   padding: 6px 14px;
   border-radius: var(--radius-xs);

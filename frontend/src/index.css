@@ -5,43 +5,43 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
-/* ── Light Theme (Default clean layout matching screenshot) ── */
+/* ── Light Theme (Emerald & Mint Crisp Clean) ── */
 :root, [data-theme="light"] {
-  --bg-base: #f8fafc;
+  --bg-base: #f4f8f6;
   --bg-sidebar: #ffffff;
   --bg-surface: #ffffff;
-  --bg-surface-hover: #f1f5f9;
+  --bg-surface-hover: #f0fdf4;
   --bg-glass: #ffffff;
   --bg-glass-strong: #ffffff;
-  --bg-input: #f8fafc;
+  --bg-input: #edf4f0;
 
-  --border: #e2e8f0;
-  --border-strong: #cbd5e1;
-  --border-light: #f1f5f9;
+  --border: #dbe7e1;
+  --border-strong: #c2d8cc;
+  --border-light: #eff6f2;
 
-  --text-primary: #0f172a;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --text-primary: #0a2318;
+  --text-secondary: #2d5543;
+  --text-muted: #6b8f7e;
 
-  --accent: #6366f1;
-  --accent-light: #818cf8;
-  --accent-dim: rgba(99, 102, 241, 0.08);
-  --accent-glow: rgba(99, 102, 241, 0.25);
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  --accent-card-gradient: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+  --accent: #10b981;
+  --accent-light: #34d399;
+  --accent-dim: rgba(16, 185, 129, 0.12);
+  --accent-glow: rgba(16, 185, 129, 0.28);
+  --accent-gradient: linear-gradient(135deg, #059669 0%, #10b981 60%, #34d399 100%);
+  --accent-card-gradient: linear-gradient(135deg, #065f46 0%, #059669 50%, #10b981 100%);
 
   --green: #10b981;
-  --green-dim: rgba(16, 185, 129, 0.1);
+  --green-dim: rgba(16, 185, 129, 0.12);
   --green-bg: #ecfdf5;
   --yellow: #f59e0b;
-  --yellow-dim: rgba(245, 158, 11, 0.1);
+  --yellow-dim: rgba(245, 158, 11, 0.12);
   --yellow-bg: #fffbeb;
   --red: #ef4444;
-  --red-dim: rgba(239, 68, 68, 0.1);
-  --blue: #3b82f6;
-  --blue-dim: rgba(59, 130, 246, 0.1);
+  --red-dim: rgba(239, 68, 68, 0.12);
+  --blue: #0ea5e9;
+  --blue-dim: rgba(14, 165, 233, 0.12);
   --purple: #8b5cf6;
-  --purple-dim: rgba(139, 92, 246, 0.1);
+  --purple-dim: rgba(139, 92, 246, 0.12);
   --purple-bg: #f5f3ff;
 
   --priority-low: var(--green);
@@ -55,66 +55,66 @@
   --radius-xl: 24px;
 
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
-  --shadow: 0 4px 16px 0 rgba(15, 23, 42, 0.04), 0 1px 3px 0 rgba(15, 23, 42, 0.02);
-  --shadow-md: 0 8px 24px 0 rgba(15, 23, 42, 0.06), 0 2px 6px 0 rgba(15, 23, 42, 0.03);
-  --shadow-lg: 0 16px 36px 0 rgba(15, 23, 42, 0.08), 0 4px 12px 0 rgba(15, 23, 42, 0.04);
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.2);
+  --shadow: 0 4px 16px 0 rgba(10, 35, 24, 0.04), 0 1px 3px 0 rgba(10, 35, 24, 0.02);
+  --shadow-md: 0 8px 24px 0 rgba(10, 35, 24, 0.07), 0 2px 6px 0 rgba(10, 35, 24, 0.03);
+  --shadow-lg: 0 16px 36px 0 rgba(10, 35, 24, 0.09), 0 4px 12px 0 rgba(10, 35, 24, 0.04);
+  --shadow-glow: 0 0 20px rgba(16, 185, 129, 0.25);
 
-  --modal-overlay: rgba(15, 23, 42, 0.45);
+  --modal-overlay: rgba(10, 35, 24, 0.5);
   --select-option-bg: #ffffff;
 }
 
-/* ── Dark Theme (Glassmorphism Deep Dark) ─────────────────── */
+/* ── Dark Theme (Obsidian & Deep Emerald Glass) ─────────────── */
 [data-theme="dark"] {
-  --bg-base: #0b0d14;
-  --bg-sidebar: #0f111a;
-  --bg-surface: #141724;
-  --bg-surface-hover: #1c2032;
-  --bg-glass: rgba(20, 23, 36, 0.85);
-  --bg-glass-strong: #141724;
-  --bg-input: #1a1e30;
+  --bg-base: #080d0a;
+  --bg-sidebar: #0c1410;
+  --bg-surface: #101c16;
+  --bg-surface-hover: #16261e;
+  --bg-glass: rgba(16, 28, 22, 0.9);
+  --bg-glass-strong: #101c16;
+  --bg-input: #14221b;
 
-  --border: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.16);
-  --border-light: rgba(255, 255, 255, 0.04);
+  --border: rgba(52, 211, 153, 0.12);
+  --border-strong: rgba(52, 211, 153, 0.22);
+  --border-light: rgba(52, 211, 153, 0.05);
 
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --text-primary: #f0fdf4;
+  --text-secondary: #9fd8be;
+  --text-muted: #5e8c76;
 
-  --accent: #818cf8;
-  --accent-light: #a5b4fc;
-  --accent-dim: rgba(129, 140, 248, 0.15);
-  --accent-glow: rgba(129, 140, 248, 0.35);
-  --accent-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-  --accent-card-gradient: linear-gradient(135deg, #581c87 0%, #4338ca 100%);
+  --accent: #10b981;
+  --accent-light: #34d399;
+  --accent-dim: rgba(16, 185, 129, 0.18);
+  --accent-glow: rgba(16, 185, 129, 0.4);
+  --accent-gradient: linear-gradient(135deg, #059669 0%, #10b981 55%, #34d399 100%);
+  --accent-card-gradient: linear-gradient(135deg, #064e3b 0%, #065f46 60%, #047857 100%);
 
   --green: #34d399;
-  --green-dim: rgba(52, 211, 153, 0.15);
-  --green-bg: rgba(52, 211, 153, 0.08);
+  --green-dim: rgba(52, 211, 153, 0.18);
+  --green-bg: rgba(52, 211, 153, 0.1);
   --yellow: #fbbf24;
-  --yellow-dim: rgba(251, 191, 36, 0.15);
-  --yellow-bg: rgba(251, 191, 36, 0.08);
+  --yellow-dim: rgba(251, 191, 36, 0.18);
+  --yellow-bg: rgba(251, 191, 36, 0.1);
   --red: #f87171;
-  --red-dim: rgba(248, 113, 113, 0.15);
-  --blue: #60a5fa;
-  --blue-dim: rgba(96, 165, 250, 0.15);
+  --red-dim: rgba(248, 113, 113, 0.18);
+  --blue: #38bdf8;
+  --blue-dim: rgba(56, 189, 248, 0.18);
   --purple: #c084fc;
-  --purple-dim: rgba(192, 132, 252, 0.15);
-  --purple-bg: rgba(192, 132, 252, 0.08);
+  --purple-dim: rgba(192, 132, 252, 0.18);
+  --purple-bg: rgba(192, 132, 252, 0.1);
 
   --priority-low: var(--green);
   --priority-medium: var(--yellow);
   --priority-high: var(--red);
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
-  --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 30px 0 rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 16px 48px 0 rgba(0, 0, 0, 0.6);
-  --shadow-glow: 0 0 25px rgba(129, 140, 248, 0.25);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+  --shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 8px 30px 0 rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 16px 48px 0 rgba(0, 0, 0, 0.7);
+  --shadow-glow: 0 0 25px rgba(16, 185, 129, 0.35);
 
-  --modal-overlay: rgba(0, 0, 0, 0.75);
-  --select-option-bg: #141724;
+  --modal-overlay: rgba(0, 0, 0, 0.8);
+  --select-option-bg: #101c16;
 }
 
 /* ── Reset & Base ─────────────────────────────────────────── */
