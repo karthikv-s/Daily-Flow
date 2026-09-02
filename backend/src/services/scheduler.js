@@ -2,7 +2,7 @@ const cron = require('node-cron');
 const Anthropic = require('@anthropic-ai/sdk');
 const prisma = require('../lib/prisma');
 const { sendPushToUser } = require('./notifications');
-const { calculateStreak } = require('./points');
+const { calculateStreak, resetWeeklyPoints } = require('./points');
 
 function getAnthropic() {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -146,6 +146,16 @@ function startScheduler() {
       console.log(`[Scheduler] Midnight cleanup: removed ${result.count} completed task(s) from previous days.`);
     } catch (err) {
       console.error('[Scheduler] Error in midnight cleanup job:', err.message);
+    }
+  });
+
+  // ── Every Monday at midnight 00:00: reset all users' points to zero ──
+  cron.schedule('0 0 * * 1', async () => {
+    try {
+      const result = await resetWeeklyPoints(prisma);
+      console.log(`[Scheduler] Weekly points reset: reset points to 0 for ${result.count} user(s).`);
+    } catch (err) {
+      console.error('[Scheduler] Error in weekly points reset job:', err.message);
     }
   });
 

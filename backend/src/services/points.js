@@ -129,4 +129,10 @@ async function calculateStreak(prisma, userId) {
   });
 }
 
-module.exports = { awardPoints, calculateStreak, BADGE_DEFINITIONS };
+async function resetWeeklyPoints(prisma) {
+  return await prisma.user.updateMany({
+    data: { pointsTotal: 0 },
+  });
+}
+
+module.exports = { awardPoints, calculateStreak, resetWeeklyPoints, BADGE_DEFINITIONS };
