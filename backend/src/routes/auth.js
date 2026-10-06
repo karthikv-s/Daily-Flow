@@ -4,10 +4,12 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const prisma = require('../lib/prisma');
 const auth = require('../middleware/auth');
+const { authLimiter } = require('../middleware/rateLimiter');
 
 // POST /api/auth/register
 router.post(
   '/register',
+  authLimiter,
   [
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 6 }),
@@ -36,6 +38,7 @@ router.post(
 // POST /api/auth/login
 router.post(
   '/login',
+  authLimiter,
   [
     body('email').isEmail().normalizeEmail(),
     body('password').notEmpty(),
@@ -66,6 +69,7 @@ const { sendOtpEmail } = require('../services/email');
 // POST /api/auth/forgot-password
 router.post(
   '/forgot-password',
+  authLimiter,
   [body('email').isEmail().normalizeEmail()],
   async (req, res) => {
     const errors = validationResult(req);
@@ -114,6 +118,7 @@ router.post(
 // POST /api/auth/verify-otp
 router.post(
   '/verify-otp',
+  authLimiter,
   [
     body('email').isEmail().normalizeEmail(),
     body('otp').isLength({ min: 6, max: 6 }).isNumeric(),
@@ -149,6 +154,7 @@ router.post(
 // POST /api/auth/reset-password
 router.post(
   '/reset-password',
+  authLimiter,
   [
     body('email').isEmail().normalizeEmail(),
     body('otp').isLength({ min: 6, max: 6 }).isNumeric(),

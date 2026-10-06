@@ -129,23 +129,26 @@ function startScheduler() {
     }
   });
 
-  // ── Every day at midnight 00:01: remove completed tasks from prev days ──
+  // ── Every day at midnight 00:01: archive completed tasks from prev days ──
   cron.schedule('1 0 * * *', async () => {
     try {
       const startOfToday = new Date();
       startOfToday.setHours(0, 0, 0, 0);
 
-      // Delete all tasks that are 'done' AND whose dueAt was before today
-      const result = await prisma.task.deleteMany({
+      // Archive all tasks that are 'done' AND whose dueAt was before today so users keep their history
+      const result = await prisma.task.updateMany({
         where: {
           status: 'done',
           dueAt: { lt: startOfToday },
         },
+        data: {
+          status: 'archived',
+        },
       });
 
-      console.log(`[Scheduler] Midnight cleanup: removed ${result.count} completed task(s) from previous days.`);
+      console.log(`[Scheduler] Midnight archive: archived ${result.count} completed task(s) from previous days.`);
     } catch (err) {
-      console.error('[Scheduler] Error in midnight cleanup job:', err.message);
+      console.error('[Scheduler] Error in midnight archive job:', err.message);
     }
   });
 

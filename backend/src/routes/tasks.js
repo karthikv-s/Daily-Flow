@@ -7,9 +7,13 @@ const { awardPoints } = require('../services/points');
 // GET /api/tasks
 router.get('/', auth, async (req, res) => {
   try {
-    const { status, priority, category } = req.query;
+    const { status, priority, category, includeArchived } = req.query;
     const where = { userId: req.userId };
-    if (status) where.status = status;
+    if (status) {
+      where.status = status;
+    } else if (includeArchived !== 'true') {
+      where.status = { not: 'archived' };
+    }
     if (priority) where.priority = priority;
     if (category) where.category = category;
 

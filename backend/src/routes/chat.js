@@ -3,6 +3,7 @@ const Anthropic = require('@anthropic-ai/sdk');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const prisma = require('../lib/prisma');
 const auth = require('../middleware/auth');
+const { chatLimiter } = require('../middleware/rateLimiter');
 
 // Lazy-initialize Gemini
 function getGemini() {
@@ -136,7 +137,7 @@ function generateSmartReply(message, existingTasks, user) {
 }
 
 // POST /api/chat
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, chatLimiter, async (req, res) => {
   const { message } = req.body;
   if (!message) return res.status(400).json({ error: 'message is required' });
 
