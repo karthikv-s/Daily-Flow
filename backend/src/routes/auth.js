@@ -27,7 +27,7 @@ router.post(
       const user = await prisma.user.create({ data: { email, passwordHash } });
 
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-      res.status(201).json({ token, user: { id: user.id, email: user.email, pointsTotal: 0, streakDays: 0, badges: [] } });
+      res.status(201).json({ token, user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, pointsTotal: 0, streakDays: 0, badges: [] } });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Server error' });
@@ -50,13 +50,13 @@ router.post(
     const { email, password } = req.body;
     try {
       const user = await prisma.user.findUnique({ where: { email } });
-      if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+      if (!user) return res.status(404).json({ error: 'User not registered. Please sign up first.' });
 
       const valid = await bcrypt.compare(password, user.passwordHash);
-      if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
+      if (!valid) return res.status(401).json({ error: 'Incorrect password' });
 
       const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, { expiresIn: '30d' });
-      res.json({ token, user: { id: user.id, email: user.email, pointsTotal: user.pointsTotal, streakDays: user.streakDays, badges: user.badges } });
+      res.json({ token, user: { id: user.id, email: user.email, name: user.name, avatar: user.avatar, pointsTotal: user.pointsTotal, streakDays: user.streakDays, badges: user.badges } });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: 'Server error' });
@@ -101,16 +101,16 @@ router.post(
         },
       });
 
-      // Send OTP email (or console fallback if SMTP not configured)
-      const emailResult = await sendOtpEmail(email, otp);
+      // Send real OTP email via Gmail SMTP
+      await sendOtpEmail(email, otp);
 
       res.json({
         success: true,
-        message: 'A 6-digit verification code has been sent to your email.',
+        message: 'A 6-digit verification code has been sent to your email inbox.',
       });
     } catch (err) {
-      console.error('[Forgot Password Error]:', err);
-      res.status(500).json({ error: 'Failed to process password reset request' });
+      console.error('[Forgot Password Error]:', err.message || err);
+      res.status(500).json({ error: err.message || 'Failed to process password reset request' });
     }
   }
 );
@@ -210,7 +210,7 @@ router.post(
 
 // PUT /api/auth/profile
 router.put('/profile', auth, async (req, res) => {
-  const { email, name } = req.body;
+  const { email, name, avatar } = req.body;
   try {
     const updateData = {};
     if (email) {
@@ -221,6 +221,12 @@ router.put('/profile', auth, async (req, res) => {
       }
       updateData.email = email;
     }
+    if (name !== undefined) {
+      updateData.name = name;
+    }
+    if (avatar !== undefined) {
+      updateData.avatar = avatar;
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: req.userId },
@@ -228,6 +234,8 @@ router.put('/profile', auth, async (req, res) => {
       select: {
         id: true,
         email: true,
+        name: true,
+        avatar: true,
         pointsTotal: true,
         streakDays: true,
         badges: true,

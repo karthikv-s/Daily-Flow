@@ -13,6 +13,11 @@ function createTransporter() {
     pass = pass.replace(/\s+/g, '').trim();
   }
 
+  // If credentials are placeholders or missing, skip SMTP and use console OTP
+  if (!user || !pass || user.includes('your-gmail') || pass.includes('your-gmail') || user.includes('example.com')) {
+    return null;
+  }
+
   if (host && user && pass) {
     return nodemailer.createTransport({
       host,
@@ -66,11 +71,7 @@ async function sendOtpEmail(toEmail, otp) {
   `;
 
   if (!transporter) {
-    console.log('\n========================================');
-    console.log(`🔑 [OTP SERVICE] Password reset OTP for ${toEmail}: ${otp}`);
-    console.log('   (SMTP not configured in .env, logged OTP for testing)');
-    console.log('========================================\n');
-    return { sent: true, mode: 'console', otp };
+    throw new Error('Gmail SMTP is not configured in backend/.env. Please configure EMAIL_USER and EMAIL_PASS (16-char Google App Password) to send real emails.');
   }
 
   try {
@@ -85,8 +86,7 @@ async function sendOtpEmail(toEmail, otp) {
     return { sent: true, mode: 'smtp', messageId: info.messageId };
   } catch (err) {
     console.error(`[OTP SERVICE] Failed to send email via SMTP:`, err.message);
-    console.log(`🔑 [OTP SERVICE] Fallback Console OTP for ${toEmail}: ${otp}`);
-    return { sent: true, mode: 'fallback_console', otp };
+    throw new Error(`Failed to send email via SMTP: ${err.message}`);
   }
 }
 

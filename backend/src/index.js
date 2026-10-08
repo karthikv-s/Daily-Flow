@@ -25,17 +25,24 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (Render health checks, curl, etc.)
+    // Allow requests with no origin (mobile native, health checks, curl, etc.)
     if (!origin) return callback(null, true);
-    // Allow any vercel.app subdomain automatically
-    if (origin.endsWith('.vercel.app') || allowedOrigins.includes(origin)) {
+    // Allow Capacitor mobile apps, local dev, and vercel deployments
+    if (
+      origin.startsWith('capacitor://') ||
+      origin.startsWith('ionic://') ||
+      origin.includes('localhost') ||
+      origin.endsWith('.vercel.app') ||
+      allowedOrigins.includes(origin)
+    ) {
       return callback(null, true);
     }
     callback(new Error(`CORS: Origin ${origin} not allowed`));
   },
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 
 // ── Routes ─────────────────────────────────────────────────────

@@ -4,7 +4,7 @@ title DailyFlow AI - Local Development Launcher
 color 0B
 
 echo ========================================================
-echo        🚀 DailyFlow AI - Full-Stack Dev Launcher
+echo        DailyFlow AI - Full-Stack Dev Launcher
 echo ========================================================
 echo.
 
@@ -35,7 +35,7 @@ if not exist "frontend\.env" (
 :: 4. Check dependencies
 if not exist "backend\node_modules" (
     echo [*] Installing backend dependencies...
-    cd backend && call npm install && cd ..
+    cd backend && call npm install && call npx prisma generate && cd ..
 )
 
 if not exist "frontend\node_modules" (
@@ -45,7 +45,7 @@ if not exist "frontend\node_modules" (
 
 echo.
 echo ========================================================
-echo   Starting Backend (port 4000) & Frontend (port 5173)...
+echo   Starting Backend (port 4000) and Frontend (port 5173)...
 echo ========================================================
 echo.
 
@@ -56,12 +56,12 @@ start "DailyFlow Backend (Port 4000)" cmd /k "cd backend && npm run dev"
 start "DailyFlow Frontend (Port 5173)" cmd /k "cd frontend && npm run dev"
 
 :: 7. Wait briefly and open browser
-timeout /t 3 /nobreak >nul
+timeout /t 3 >nul 2>&1 || ping 127.0.0.1 -n 4 >nul
 echo [*] Opening DailyFlow in your browser...
 start http://localhost:5173
 
 echo.
-echo [✓] Both servers are running in separate terminal windows.
+echo [OK] Both servers are running in separate terminal windows.
 echo     - Backend:  http://localhost:4000
 echo     - Frontend: http://localhost:5173
 echo.

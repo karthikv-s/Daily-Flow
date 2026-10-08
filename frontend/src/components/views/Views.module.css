@@ -508,7 +508,6 @@
   position: fixed;
   inset: 0;
   background: var(--modal-overlay);
-  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;

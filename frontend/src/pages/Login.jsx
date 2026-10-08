@@ -20,7 +20,22 @@ export default function Login() {
       await login(email, password);
       navigate('/dashboard');
     } catch (err) {
-      addToast({ title: 'Login failed', message: err.response?.data?.error || 'Check your credentials', type: 'error' });
+      const isNotRegistered = err.response?.status === 404;
+      let errorTitle = 'Login failed';
+      let errorMsg = err.response?.data?.error;
+
+      if (isNotRegistered) {
+        errorTitle = 'User Not Registered';
+      } else if (!err.response) {
+        errorTitle = 'Connection Error';
+        errorMsg = 'Cannot reach backend server. Make sure your PC server is running and phone is on the same Wi-Fi.';
+      }
+
+      addToast({
+        title: errorTitle,
+        message: errorMsg || 'Incorrect email or password',
+        type: 'error'
+      });
     } finally {
       setLoading(false);
     }
@@ -77,6 +92,32 @@ export default function Login() {
           Don&apos;t have an account?{' '}
           <Link to="/register" className={styles.switchLink}>Create one</Link>
         </p>
+
+        <div style={{ textAlign: 'center', marginTop: 12 }}>
+          <button
+            type="button"
+            onClick={() => {
+              const current = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || 'http://10.182.137.165:4000';
+              const input = window.prompt('Backend Server URL (e.g. http://10.182.137.165:4000 or your cloud URL):', current);
+              if (input !== null && input.trim()) {
+                const cleaned = input.trim().replace(/\/$/, '');
+                localStorage.setItem('custom_api_url', cleaned);
+                window.location.reload();
+              }
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--text-muted, #888)',
+              fontSize: '11px',
+              cursor: 'pointer',
+              textDecoration: 'underline',
+              opacity: 0.8
+            }}
+          >
+            ⚙️ Server URL Setting
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -80,6 +80,7 @@ export default function Dashboard() {
   }, [now]);
 
   const userName = useMemo(() => {
+    if (user?.name) return user.name;
     const storedName = localStorage.getItem('user_display_name');
     if (storedName) return storedName;
     if (!user?.email) return 'Karthik';
@@ -88,8 +89,9 @@ export default function Dashboard() {
   }, [user]);
 
   const userAvatarEmoji = useMemo(() => {
+    if (user?.avatar) return user.avatar;
     return localStorage.getItem('user_avatar_img') || localStorage.getItem('user_avatar_emoji') || '🧑‍💻';
-  }, [showProfileModal]);
+  }, [user, showProfileModal]);
 
   const dateString = useMemo(() => {
     return now.toLocaleDateString('en-US', {

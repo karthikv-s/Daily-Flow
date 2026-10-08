@@ -15,11 +15,11 @@ export default function ProfileModal({ onClose }) {
   const streamRef = useRef(null);
 
   const [displayName, setDisplayName] = useState(() =>
-    localStorage.getItem('user_display_name') || (user?.email ? user.email.split('@')[0] : 'Karthik')
+    user?.name || localStorage.getItem('user_display_name') || (user?.email ? user.email.split('@')[0] : 'Karthik')
   );
 
   const [avatar, setAvatar] = useState(() =>
-    localStorage.getItem('user_avatar_img') || localStorage.getItem('user_avatar_emoji') || '🧑‍💻'
+    user?.avatar || localStorage.getItem('user_avatar_img') || localStorage.getItem('user_avatar_emoji') || '🧑‍💻'
   );
 
   const [email, setEmail] = useState(user?.email || '');
@@ -114,9 +114,14 @@ export default function ProfileModal({ onClose }) {
     if (!email.trim()) return;
     setSaving(true);
     try {
-      if (email.trim() !== user?.email) {
-        await updateProfile({ email: email.trim() });
-      }
+      // Persist directly to backend database on user account
+      await updateProfile({
+        email: email.trim(),
+        name: displayName.trim(),
+        avatar: avatar || '🧑‍💻',
+      });
+
+      // Keep in localStorage for instant cache
       localStorage.setItem('user_display_name', displayName.trim());
       if (isImageAvatar) {
         localStorage.setItem('user_avatar_img', avatar);
@@ -125,8 +130,9 @@ export default function ProfileModal({ onClose }) {
         localStorage.setItem('user_avatar_emoji', avatar);
         localStorage.removeItem('user_avatar_img');
       }
-      addToast({ title: 'Profile Updated! ✨', message: 'Your settings have been saved.', type: 'success' });
-      if (refreshUser) refreshUser();
+
+      addToast({ title: 'Profile Updated! ✨', message: 'Your profile picture is saved and synced across all devices.', type: 'success' });
+      if (refreshUser) await refreshUser();
       onClose();
     } catch (err) {
       addToast({ title: 'Update Failed', message: err.response?.data?.error || 'Could not update profile', type: 'error' });

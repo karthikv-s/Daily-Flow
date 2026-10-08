@@ -83,10 +83,10 @@ export default function AnalyticsView({ tasks = [] }) {
         </div>
 
         <div className={styles.analyticCard}>
-          <div style={{ fontSize: '1.8rem', color: '#ec4899' }}>⏱️</div>
+          <div style={{ fontSize: '1.8rem', color: 'var(--yellow)' }}>⏱️</div>
           <div>
-            <div className={styles.analyticNum}>18h 45m</div>
-            <div className={styles.analyticLabel}>Total Focus Time</div>
+            <div className={styles.analyticNum}>{localStorage.getItem('dailyflow_focus_time') || '2h 30m'}</div>
+            <div className={styles.analyticLabel}>Daily Focus Time</div>
           </div>
         </div>
       </div>

@@ -57,6 +57,21 @@ export default function OverviewView({
   const totalRelevant = tasks.length || 1;
   const progressPercent = Math.min(100, Math.round((doneCount / totalRelevant) * 100)) || 0;
 
+  // Editable Focus Time (persisted in localStorage)
+  const [focusTime, setFocusTime] = useState(() => {
+    return localStorage.getItem('dailyflow_focus_time') || '2h 30m';
+  });
+  const [isEditingFocus, setIsEditingFocus] = useState(false);
+  const [tempFocusInput, setTempFocusInput] = useState(focusTime);
+
+  function handleSaveFocus(e) {
+    if (e) e.preventDefault();
+    const clean = tempFocusInput.trim() || '2h 30m';
+    setFocusTime(clean);
+    localStorage.setItem('dailyflow_focus_time', clean);
+    setIsEditingFocus(false);
+  }
+
   return (
     <>
       {/* 4 Metric Stats Cards */}
@@ -81,13 +96,53 @@ export default function OverviewView({
           </div>
         </div>
 
-        <div className={styles.metricCard}>
+        <div
+          className={styles.metricCard + (!isEditingFocus ? ' ' + styles.metricCardInteractive : '')}
+          onClick={() => {
+            if (!isEditingFocus) {
+              setTempFocusInput(focusTime);
+              setIsEditingFocus(true);
+            }
+          }}
+          title={!isEditingFocus ? 'Click to edit Focus Time' : undefined}
+        >
           <div className={styles.metricIconWrapper} style={{ background: 'var(--yellow-bg)', color: 'var(--yellow)' }}>
             ⏱️
           </div>
-          <div className={styles.metricInfo}>
-            <div className={styles.metricValue}>2h 30m</div>
-            <div className={styles.metricLabel}>Focus Time</div>
+          <div className={styles.metricInfo} style={{ flex: 1 }}>
+            {isEditingFocus ? (
+              <form onSubmit={handleSaveFocus} className={styles.focusEditForm} onClick={(e) => e.stopPropagation()}>
+                <div className={styles.focusInputRow}>
+                  <input
+                    type="text"
+                    className={styles.focusInput}
+                    value={tempFocusInput}
+                    onChange={(e) => setTempFocusInput(e.target.value)}
+                    placeholder="e.g. 3h 15m"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setIsEditingFocus(false);
+                    }}
+                  />
+                  <button type="submit" className={styles.focusSaveBtn}>Save</button>
+                  <button type="button" className={styles.focusCancelBtn} onClick={() => setIsEditingFocus(false)}>✕</button>
+                </div>
+                <div className={styles.focusChipsRow}>
+                  <button type="button" className={styles.focusChip} onClick={() => setTempFocusInput('1h')}>1h</button>
+                  <button type="button" className={styles.focusChip} onClick={() => setTempFocusInput('2h 30m')}>2h 30m</button>
+                  <button type="button" className={styles.focusChip} onClick={() => setTempFocusInput('4h')}>4h</button>
+                  <button type="button" className={styles.focusChip} onClick={() => setTempFocusInput('6h')}>6h</button>
+                </div>
+              </form>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span className={styles.metricValue}>{focusTime}</span>
+                  <span className={styles.editPencilIcon} title="Edit focus time">✏️</span>
+                </div>
+                <div className={styles.metricLabel}>Focus Time (Click to edit)</div>
+              </>
+            )}
           </div>
         </div>
 

@@ -1,15 +1,33 @@
 import axios from 'axios';
 
+const getInitialBaseUrl = () => {
+  return localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || 'http://localhost:4000';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000',
+  baseURL: getInitialBaseUrl(),
 });
 
-// Attach JWT to every request
+// Attach JWT and dynamic server URL to every request
 api.interceptors.request.use((config) => {
+  const custom = localStorage.getItem('custom_api_url');
+  if (custom) {
+    config.baseURL = custom;
+  }
   const token = localStorage.getItem('token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
+
+export const setCustomApiUrl = (url) => {
+  if (url) {
+    localStorage.setItem('custom_api_url', url);
+    api.defaults.baseURL = url;
+  } else {
+    localStorage.removeItem('custom_api_url');
+    api.defaults.baseURL = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+  }
+};
 
 // Auth
 export const register       = (email, password) => api.post('/api/auth/register', { email, password });
