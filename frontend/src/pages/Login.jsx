@@ -97,8 +97,8 @@ export default function Login() {
           <button
             type="button"
             onClick={() => {
-              const current = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || 'http://10.182.137.165:4000';
-              const input = window.prompt('Backend Server URL (e.g. http://10.182.137.165:4000 or your cloud URL):', current);
+              const current = localStorage.getItem('custom_api_url') || import.meta.env.VITE_API_URL || 'https://daily-flow-k87g.onrender.com';
+              const input = window.prompt('Backend Server URL (e.g. https://daily-flow-k87g.onrender.com):', current);
               if (input !== null && input.trim()) {
                 const cleaned = input.trim().replace(/\/$/, '');
                 localStorage.setItem('custom_api_url', cleaned);

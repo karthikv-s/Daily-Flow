@@ -10,6 +10,7 @@ export default function ProfileModal({ onClose }) {
   const { user, logout, refreshUser } = useAuth();
   const { addToast } = useToast();
   const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const streamRef = useRef(null);
@@ -29,29 +30,66 @@ export default function ProfileModal({ onClose }) {
 
   const isImageAvatar = avatar && avatar.startsWith('data:');
 
-  // ── Gallery upload ──────────────────────────────────────────────
+  // ── Gallery / Camera file processing (supports up to 20MB) ──────
   function handleImageFile(file) {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
       addToast({ title: 'Invalid file', message: 'Please select an image file.', type: 'error' });
       return;
     }
-    if (file.size > 3 * 1024 * 1024) {
-      addToast({ title: 'File too large', message: 'Please choose an image under 3MB.', type: 'error' });
+    // Allow up to 20MB
+    if (file.size > 20 * 1024 * 1024) {
+      addToast({ title: 'File too large', message: 'Please choose an image under 20MB.', type: 'error' });
       return;
     }
+
     const reader = new FileReader();
-    reader.onload = (e) => setAvatar(e.target.result);
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        // High-res downsampling to prevent huge base64 memory freeze while maintaining crisp visual quality
+        const maxDim = 1200;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+        setAvatar(dataUrl);
+      };
+      img.onerror = () => setAvatar(e.target.result);
+      img.src = e.target.result;
+    };
     reader.readAsDataURL(file);
   }
 
-  // ── Camera (getUserMedia) ───────────────────────────────────────
+  // ── Camera (Native on mobile, getUserMedia on desktop) ───────────
   const openCamera = useCallback(async () => {
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) || Boolean(window.Capacitor);
+    if (isMobile) {
+      cameraInputRef.current?.click();
+      return;
+    }
+
     setCameraOpen(true);
     setCameraReady(false);
     try {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('getUserMedia not supported');
+      }
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user', width: { ideal: 400 }, height: { ideal: 400 } },
+        video: { facingMode: 'user', width: { ideal: 600 }, height: { ideal: 600 } },
         audio: false,
       });
       streamRef.current = stream;
@@ -64,11 +102,16 @@ export default function ProfileModal({ onClose }) {
       }
     } catch (err) {
       setCameraOpen(false);
-      addToast({
-        title: 'Camera Access Denied',
-        message: 'Please allow camera permission in your browser and try again.',
-        type: 'error',
-      });
+      // Fallback seamlessly to native camera picker
+      if (cameraInputRef.current) {
+        cameraInputRef.current.click();
+      } else {
+        addToast({
+          title: 'Camera Access Needed',
+          message: 'Please allow camera permission in phone settings or upload from gallery.',
+          type: 'error',
+        });
+      }
     }
   }, [addToast]);
 
@@ -221,7 +264,22 @@ export default function ProfileModal({ onClose }) {
                 type="file"
                 accept="image/*"
                 style={{ display: 'none' }}
-                onChange={(e) => handleImageFile(e.target.files?.[0])}
+                onChange={(e) => {
+                  handleImageFile(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
+              />
+
+              <input
+                ref={cameraInputRef}
+                type="file"
+                accept="image/*"
+                capture="user"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  handleImageFile(e.target.files?.[0]);
+                  e.target.value = '';
+                }}
               />
 
               <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', marginTop: 4 }}>
